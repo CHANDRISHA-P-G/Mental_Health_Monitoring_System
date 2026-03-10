@@ -2,61 +2,125 @@ const express = require("express");
 const router = express.Router();
 const Response = require("../models/Response");
 const auth = require("../middleware/auth");
+const dayjs = require("dayjs");
 
-
-// =======================================
-// 📅 DAILY - Get response by specific date
-// =======================================
-router.get("/by-date", auth, async (req, res) => {
+// 1. SUBMIT RESPONSE: POST /api/responses
+router.post("/", auth, async (req, res) => {
   try {
-    if (!req.query.date) {
-      return res.status(400).json({ message: "Date is required" });
-    }
-
-    const selected = new Date(req.query.date);
-
-    const start = new Date(selected);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(selected);
-    end.setHours(23, 59, 59, 999);
-
-    const response = await Response.findOne({
+    const { answers, scores } = req.body;
+    const newResponse = new Response({
       user: req.user.id,
-      date: { $gte: start, $lte: end },
+      answers,
+      scores,
+      // Ensure date is stored correctly
+      createdAt: answers.date ? dayjs(answers.date).toDate() : new Date()
     });
-
-    res.status(200).json(response || null);
+    await newResponse.save();
+    res.status(201).json(newResponse);
   } catch (err) {
-    console.error("DAILY ERROR:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Server Error" });
   }
 });
 
+// 2. GET BY DATE: GET /api/responses/by-date?date=YYYY-MM-DD
+router.get("/by-date", auth, async (req, res) => {
+  try {
+    const { date } = req.query;
+    const startOfDay = dayjs(date).startOf("day").toDate();
+    const endOfDay = dayjs(date).endOf("day").toDate();
 
-// =======================================
-// 📊 WEEKLY - Last 7 Days Data
-// =======================================
+    const response = await Response.findOne({
+      user: req.user.id,
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    if (!response) return res.status(404).json({ message: "No data found" });
+    res.json(response.scores); // Return only the scores object
+  } catch (err) {
+    res.status(500).send("Server Error");
+  }
+});
+
+// 3. GET ALL DATES: GET /api/responses/all-dates (For Calendar colors)
+router.get("/all-dates", auth, async (req, res) => {
+  try {
+    const responses = await Response.find({ user: req.user.id }).select("createdAt");
+    const dates = responses.map(r => dayjs(r.createdAt).format("YYYY-MM-DD"));
+    res.json([...new Set(dates)]);
+  } catch (err) {
+    res.status(500).send("Server Error");
+  }
+});
+
+// 4. GET WEEKLY: GET /api/responses/weekly?date=YYYY-MM-DD
 router.get("/weekly", auth, async (req, res) => {
   try {
-    const today = new Date();
-
-    const firstDay = new Date();
-    firstDay.setDate(today.getDate() - 6);
-    firstDay.setHours(0, 0, 0, 0);
-
-    const lastDay = new Date();
-    lastDay.setHours(23, 59, 59, 999);
+    const { date } = req.query;
+    const endOfRange = dayjs(date).endOf("day");
+    const startOfRange = dayjs(date).subtract(6, "day").startOf("day");
 
     const responses = await Response.find({
       user: req.user.id,
-      date: { $gte: firstDay, $lte: lastDay },
-    }).sort({ date: 1 });
+      createdAt: { $gte: startOfRange.toDate(), $lte: endOfRange.toDate() }
+    });
 
-    res.status(200).json(responses);
+    // Map data to a simple format for build7Days
+    const formatted = responses.map(r => ({
+      date: dayjs(r.createdAt).format("YYYY-MM-DD"),
+      ...r.scores
+    }));
+
+    res.json(formatted);
   } catch (err) {
-    console.error("WEEKLY ERROR:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).send("Server Error");
+  }
+});
+
+// 5. GET MONTHLY: GET /api/responses/monthly?date=YYYY-MM-DD
+router.get("/monthly", auth, async (req, res) => {
+  try {
+    const { date } = req.query;
+    const endOfRange = dayjs(date).endOf("day");
+    const startOfRange = dayjs(date).subtract(29, "day").startOf("day");
+
+    const responses = await Response.find({
+      user: req.user.id,
+      createdAt: { $gte: startOfRange.toDate(), $lte: endOfRange.toDate() }
+    });
+
+    // Map data to a simple format for build30Days
+    const formatted = responses.map(r => ({
+      date: dayjs(r.createdAt).format("YYYY-MM-DD"),
+      ...r.scores
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).send("Server Error");
+  }
+});
+
+// 6. GET YEARLY: GET /api/responses/yearly?date=YYYY-MM-DD
+router.get("/yearly", auth, async (req, res) => {
+  try {
+    const { date } = req.query;
+    const endOfRange = dayjs(date).endOf("day");
+    const startOfRange = dayjs(date).subtract(364, "day").startOf("day");
+
+    const responses = await Response.find({
+      user: req.user.id,
+      createdAt: { $gte: startOfRange.toDate(), $lte: endOfRange.toDate() }
+    });
+
+    // Map data to a simple format for build365Days
+    const formatted = responses.map(r => ({
+      date: dayjs(r.createdAt).format("YYYY-MM-DD"),
+      ...r.scores
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).send("Server Error");
   }
 });
 
