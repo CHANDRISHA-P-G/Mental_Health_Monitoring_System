@@ -7,6 +7,7 @@ import { styled } from "@mui/material/styles";
 import { Line, Doughnut } from "react-chartjs-2";
 import axios from "axios";
 import dayjs from "dayjs";
+import { PickersDay } from "@mui/x-date-pickers/PickersDay";
 
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -60,6 +61,8 @@ function WeeklyReport() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [referenceDate, setReferenceDate] = useState(dayjs());
+  const [responseDates, setResponseDates] = useState([]);
+  const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
   // ✅ DATE FORMAT
   const startDate = referenceDate.subtract(6, 'day').format("DD/MM/YYYY");
@@ -85,7 +88,7 @@ function WeeklyReport() {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          `http://localhost:5000/api/responses/weekly?date=${referenceDate.format("YYYY-MM-DD")}`,
+          `${API_BASE}/responses/weekly?date=${referenceDate.format("YYYY-MM-DD")}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         build7Days(res.data);
@@ -96,7 +99,22 @@ function WeeklyReport() {
       }
     };
     fetchWeekly();
-  }, [referenceDate, build7Days]);
+  }, [referenceDate, build7Days, API_BASE]);
+
+  useEffect(() => {
+    const fetchResponseDates = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`${API_BASE}/responses/all-dates`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setResponseDates(res.data.map((d) => dayjs(d).format("YYYY-MM-DD")));
+      } catch (err) {
+        console.error("Error fetching response dates:", err);
+      }
+    };
+    fetchResponseDates();
+  }, [API_BASE]);
 
   // Averages
   const avgHydration = data.length ? Math.round(data.reduce((a, c) => a + (c.hydration || 0), 0) / data.length) : 0;
@@ -138,6 +156,24 @@ function WeeklyReport() {
               value={referenceDate}
               onChange={(v) => setReferenceDate(v)}
               format="DD/MM/YYYY"
+              slots={{ day: (props) => {
+                const { day, outsideCurrentMonth, ...other } = props;
+                const formatted = day.format("YYYY-MM-DD");
+                return (
+                  <PickersDay
+                    {...other}
+                    day={day}
+                    outsideCurrentMonth={outsideCurrentMonth}
+                    sx={{
+                      ...other.sx,
+                      ...(responseDates.includes(formatted) ? {
+                        border: '1px solid #1976d2',
+                        bgcolor: '#e3f2fd',
+                      } : {}),
+                    }}
+                  />
+                );
+              }} }
             />
           </Box>
         </Box>

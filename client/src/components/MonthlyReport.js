@@ -3,6 +3,7 @@ import {
   Grid, Typography, Card, CardContent, CircularProgress,
   Box, Avatar, Stack, LinearProgress
 } from "@mui/material";
+import { PickersDay } from "@mui/x-date-pickers/PickersDay";
 import { styled } from "@mui/material/styles";
 import { Line, Doughnut } from "react-chartjs-2";
 import axios from "axios";
@@ -60,6 +61,8 @@ function MonthlyReport() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [referenceDate, setReferenceDate] = useState(dayjs());
+  const [responseDates, setResponseDates] = useState([]);
+  const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
   // ✅ DATE RANGE
   const startDate = referenceDate.subtract(29, 'day').format("DD/MM/YYYY");
@@ -92,7 +95,7 @@ function MonthlyReport() {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          `http://localhost:5000/api/responses/monthly?date=${referenceDate.format("YYYY-MM-DD")}`,
+          `${API_BASE}/responses/monthly?date=${referenceDate.format("YYYY-MM-DD")}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         build30Days(res.data || []);
@@ -103,7 +106,22 @@ function MonthlyReport() {
       }
     };
     fetchMonthly();
-  }, [referenceDate, build30Days]);
+  }, [referenceDate, build30Days, API_BASE]);
+
+  useEffect(() => {
+    const fetchResponseDates = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`${API_BASE}/responses/all-dates`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setResponseDates(res.data.map((d) => dayjs(d).format("YYYY-MM-DD")));
+      } catch (err) {
+        console.error("Error fetching response dates:", err);
+      }
+    };
+    fetchResponseDates();
+  }, [API_BASE]);
 
   // CALCULATIONS
   const dailyTotals = data.map(day =>
@@ -165,6 +183,24 @@ function MonthlyReport() {
               value={referenceDate}
               onChange={(v) => setReferenceDate(v)}
               format="DD/MM/YYYY"
+              slots={{ day: (props) => {
+                const { day, outsideCurrentMonth, ...other } = props;
+                const formatted = day.format("YYYY-MM-DD");
+                return (
+                  <PickersDay
+                    {...other}
+                    day={day}
+                    outsideCurrentMonth={outsideCurrentMonth}
+                    sx={{
+                      ...other.sx,
+                      ...(responseDates.includes(formatted) ? {
+                        border: '1px solid #1976d2',
+                        bgcolor: '#e3f2fd',
+                      } : {}),
+                    }}
+                  />
+                );
+              }} }
             />
           </Box>
         </Box>
@@ -222,7 +258,7 @@ function MonthlyReport() {
                     <Avatar sx={{ bgcolor: '#E3F2FD' }}>
                       <TimelineIcon sx={{ color: '#1E88E5' }} />
                     </Avatar>
-                    <Typography fontWeight={800}>30-Day Trend</Typography>
+                    <Typography fontWeight={800}>Monthly Trend</Typography>
                   </Stack>
 
                   <Box sx={{ height: 320 }}>

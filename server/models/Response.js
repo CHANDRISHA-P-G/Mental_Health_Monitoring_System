@@ -1,23 +1,22 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const responseSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  },
-  answers: {
-    type: Object,
-    required: true
-  },
-  scores: {
-    type: Object,
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+const gratitudeSchema = new mongoose.Schema({
+  text: { type: String, required: true },
+  id: { type: Number, required: true },
+  timestamp: { type: Date, default: Date.now }
+}, { _id: false });
 
-module.exports = mongoose.model("Response", responseSchema);
+const ResponseSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  date: { type: Date, required: true },
+  hydration: { type: Number, default: 0 },
+  exercise: { type: Number, default: 0 },
+  sleep: { type: Number, default: 0 },
+  gratitude: { type: [gratitudeSchema], default: [] },
+  socialBattery: { type: Number },
+  Morning: { type: [Object], default: [] },
+  Afternoon: { type: [Object], default: [] },
+  Night: { type: [Object], default: [] },
+}, { timestamps: true });
+
+module.exports = mongoose.model('Response', ResponseSchema);

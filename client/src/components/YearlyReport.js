@@ -3,6 +3,7 @@ import {
   Grid, Typography, Card, CardContent, CircularProgress,
   Box, Avatar, Stack, LinearProgress
 } from "@mui/material";
+import { PickersDay } from "@mui/x-date-pickers/PickersDay";
 import { styled } from "@mui/material/styles";
 import { Line, Doughnut } from "react-chartjs-2";
 import axios from "axios";
@@ -60,6 +61,8 @@ function YearlyReport() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [referenceDate, setReferenceDate] = useState(dayjs());
+  const [responseDates, setResponseDates] = useState([]);
+  const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
   // ✅ DATE RANGE (365 days)
   const startDate = referenceDate.subtract(364, 'day').format("DD/MM/YYYY");
@@ -92,7 +95,7 @@ function YearlyReport() {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          `http://localhost:5000/api/responses/yearly?date=${referenceDate.format("YYYY-MM-DD")}`,
+          `${API_BASE}/responses/yearly?date=${referenceDate.format("YYYY-MM-DD")}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         build365Days(res.data || []);
@@ -103,7 +106,22 @@ function YearlyReport() {
       }
     };
     fetchYearly();
-  }, [referenceDate, build365Days]);
+  }, [referenceDate, build365Days, API_BASE]);
+
+  useEffect(() => {
+    const fetchResponseDates = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`${API_BASE}/responses/all-dates`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setResponseDates(res.data.map((d) => dayjs(d).format("YYYY-MM-DD")));
+      } catch (err) {
+        console.error("Error fetching response dates:", err);
+      }
+    };
+    fetchResponseDates();
+  }, [API_BASE]);
 
   // 📊 CALCULATIONS
   const dailyTotals = data.map(day =>
@@ -143,6 +161,24 @@ function YearlyReport() {
               value={referenceDate}
               onChange={(v) => setReferenceDate(v)}
               format="DD/MM/YYYY"
+              slots={{ day: (props) => {
+                const { day, outsideCurrentMonth, ...other } = props;
+                const formatted = day.format("YYYY-MM-DD");
+                return (
+                  <PickersDay
+                    {...other}
+                    day={day}
+                    outsideCurrentMonth={outsideCurrentMonth}
+                    sx={{
+                      ...other.sx,
+                      ...(responseDates.includes(formatted) ? {
+                        border: '1px solid #1976d2',
+                        bgcolor: '#e3f2fd',
+                      } : {}),
+                    }}
+                  />
+                );
+              }} }
             />
           </Box>
         </Box>

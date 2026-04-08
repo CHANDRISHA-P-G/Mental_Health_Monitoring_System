@@ -1,20 +1,45 @@
+// server/middleware/authMiddleware.js
+// ─────────────────────────────────────────────────────────────────────────────
+// Single canonical auth middleware file.
+// Both Test.js route files referenced this differently — we now have ONE file.
+// Import it everywhere as:  const auth = require('../middleware/authMiddleware');
+// ─────────────────────────────────────────────────────────────────────────────
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-module.exports = function (req, res, next) {
-  const authHeader = req.headers.authorization;
+const auth = async (req, res, next) => {
+  let token;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "No token, authorization denied" });
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
   }
 
-  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Not authorized — no token" });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: decoded.id };
+    // Attach user object (without password) to request
+    req.user = await User.findById(decoded.id).select("-password");
+
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "User no longer exists" });
+    }
+
     next();
   } catch (err) {
-    console.error(err);
-    res.status(401).json({ message: "Token is not valid" });
+    return res
+      .status(401)
+      .json({ success: false, message: "Token invalid or expired" });
   }
 };
+
+module.exports = auth;

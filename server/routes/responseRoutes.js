@@ -1,126 +1,132 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const Response = require("../models/Response");
-const auth = require("../middleware/auth");
-const dayjs = require("dayjs");
+const Response = require('../models/Response'); // Your Mongoose model
+const auth = require('../middleware/authMiddleware'); // Your auth middleware
 
-// 1. SUBMIT RESPONSE: POST /api/responses
-router.post("/", auth, async (req, res) => {
+const normalizeDate = (value) => {
+  if (!value) return null;
+  const d = new Date(value);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+// POST /api/responses - create or update response
+router.post('/', auth, async (req, res) => {
   try {
-    const { answers, scores } = req.body;
-    const newResponse = new Response({
-      user: req.user.id,
-      answers,
-      scores,
-      // Ensure date is stored correctly
-      createdAt: answers.date ? dayjs(answers.date).toDate() : new Date()
-    });
-    await newResponse.save();
-    res.status(201).json(newResponse);
+    const { date, answers = {}, ...directFields } = req.body;
+
+    if (!date) {
+      return res.status(400).json({ message: 'Date is required' });
+    }
+
+    const responseDate = normalizeDate(date);
+    if (!responseDate) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+
+    const payload = { ...answers, ...directFields };
+    const updateData = {};
+
+    if (payload.gratitude !== undefined) {
+      updateData.gratitude = Array.isArray(payload.gratitude) ? payload.gratitude : [];
+    }
+    if (payload.socialBattery !== undefined) updateData.socialBattery = payload.socialBattery;
+    if (payload.hydration !== undefined) updateData.hydration = payload.hydration;
+    if (payload.sleep !== undefined) updateData.sleep = payload.sleep;
+    if (payload.exercise !== undefined) updateData.exercise = payload.exercise;
+    if (payload.Morning !== undefined) updateData.Morning = Array.isArray(payload.Morning) ? payload.Morning : [];
+    if (payload.Afternoon !== undefined) updateData.Afternoon = Array.isArray(payload.Afternoon) ? payload.Afternoon : [];
+    if (payload.Night !== undefined) updateData.Night = Array.isArray(payload.Night) ? payload.Night : [];
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: 'No valid fields provided to save' });
+    }
+
+    const responseDoc = await Response.findOneAndUpdate(
+      { user: req.user.id, date: responseDate },
+      { $set: updateData, $setOnInsert: { user: req.user.id, date: responseDate } },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+
+    res.json(responseDoc);
   } catch (err) {
-    res.status(500).json({ message: "Server Error" });
+    console.error('Error in POST /responses:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// 2. GET BY DATE: GET /api/responses/by-date?date=YYYY-MM-DD
-router.get("/by-date", auth, async (req, res) => {
+// GET /api/responses/by-date?date=YYYY-MM-DD
+// Fetch response for a specific date
+router.get('/by-date', auth, async (req, res) => {
   try {
-    const { date } = req.query;
-    const startOfDay = dayjs(date).startOf("day").toDate();
-    const endOfDay = dayjs(date).endOf("day").toDate();
-
-    const response = await Response.findOne({
-      user: req.user.id,
-      createdAt: { $gte: startOfDay, $lte: endOfDay }
-    });
-
-    if (!response) return res.status(404).json({ message: "No data found" });
-    res.json(response.scores); // Return only the scores object
+    const dateStr = req.query.date;
+    if (!dateStr) {
+      return res.status(400).json({ message: 'Date query parameter is required' });
+    }
+    const doc = await Response.findOne({ user: req.user.id, date: normalizeDate(dateStr) });
+    res.json(doc);
   } catch (err) {
-    res.status(500).send("Server Error");
+    console.error('Error in GET /by-date:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// 3. GET ALL DATES: GET /api/responses/all-dates (For Calendar colors)
-router.get("/all-dates", auth, async (req, res) => {
+const getRangeResponses = async (req, res, daysBack) => {
   try {
-    const responses = await Response.find({ user: req.user.id }).select("createdAt");
-    const dates = responses.map(r => dayjs(r.createdAt).format("YYYY-MM-DD"));
-    res.json([...new Set(dates)]);
+    const dateStr = req.query.date;
+    if (!dateStr) {
+      return res.status(400).json({ message: 'Date query parameter is required' });
+    }
+    const endDate = normalizeDate(dateStr);
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - daysBack);
+
+    const docs = await Response.find({
+      user: req.user.id,
+      date: { $gte: startDate, $lte: endDate }
+    }).sort({ date: 1 });
+
+    res.json(docs);
   } catch (err) {
-    res.status(500).send("Server Error");
+    console.error('Error in GET range response:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+router.get('/weekly', auth, async (req, res) => getRangeResponses(req, res, 6));
+router.get('/monthly', auth, async (req, res) => getRangeResponses(req, res, 29));
+router.get('/yearly', auth, async (req, res) => getRangeResponses(req, res, 364));
+
+// GET /api/responses/latest
+router.get('/latest', auth, async (req, res) => {
+  try {
+    const doc = await Response.findOne({ user: req.user.id }).sort({ date: -1 });
+    res.json(doc);
+  } catch (err) {
+    console.error('Error in GET /latest:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// 4. GET WEEKLY: GET /api/responses/weekly?date=YYYY-MM-DD
-router.get("/weekly", auth, async (req, res) => {
+// GET /api/responses/all-dates
+router.get('/all-dates', auth, async (req, res) => {
   try {
-    const { date } = req.query;
-    const endOfRange = dayjs(date).endOf("day");
-    const startOfRange = dayjs(date).subtract(6, "day").startOf("day");
-
-    const responses = await Response.find({
-      user: req.user.id,
-      createdAt: { $gte: startOfRange.toDate(), $lte: endOfRange.toDate() }
-    });
-
-    // Map data to a simple format for build7Days
-    const formatted = responses.map(r => ({
-      date: dayjs(r.createdAt).format("YYYY-MM-DD"),
-      ...r.scores
-    }));
-
-    res.json(formatted);
+    const responses = await Response.find({ user: req.user.id }, { date: 1, _id: 0 });
+    res.json(responses.map(r => r.date));
   } catch (err) {
-    res.status(500).send("Server Error");
+    console.error('Error in GET /all-dates:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// 5. GET MONTHLY: GET /api/responses/monthly?date=YYYY-MM-DD
-router.get("/monthly", auth, async (req, res) => {
+// Test route
+router.get('/test-saved', auth, async (req, res) => {
   try {
-    const { date } = req.query;
-    const endOfRange = dayjs(date).endOf("day");
-    const startOfRange = dayjs(date).subtract(29, "day").startOf("day");
-
-    const responses = await Response.find({
-      user: req.user.id,
-      createdAt: { $gte: startOfRange.toDate(), $lte: endOfRange.toDate() }
-    });
-
-    // Map data to a simple format for build30Days
-    const formatted = responses.map(r => ({
-      date: dayjs(r.createdAt).format("YYYY-MM-DD"),
-      ...r.scores
-    }));
-
-    res.json(formatted);
+    const responses = await Response.find({ user: req.user.id });
+    res.json(responses);
   } catch (err) {
-    res.status(500).send("Server Error");
-  }
-});
-
-// 6. GET YEARLY: GET /api/responses/yearly?date=YYYY-MM-DD
-router.get("/yearly", auth, async (req, res) => {
-  try {
-    const { date } = req.query;
-    const endOfRange = dayjs(date).endOf("day");
-    const startOfRange = dayjs(date).subtract(364, "day").startOf("day");
-
-    const responses = await Response.find({
-      user: req.user.id,
-      createdAt: { $gte: startOfRange.toDate(), $lte: endOfRange.toDate() }
-    });
-
-    // Map data to a simple format for build365Days
-    const formatted = responses.map(r => ({
-      date: dayjs(r.createdAt).format("YYYY-MM-DD"),
-      ...r.scores
-    }));
-
-    res.json(formatted);
-  } catch (err) {
-    res.status(500).send("Server Error");
+    console.error('Error fetching responses:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

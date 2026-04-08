@@ -26,9 +26,9 @@ function Home() {
       display: 'flex', 
       justifyContent: 'center', 
       alignItems: 'center', 
-      minHeight: '100vh', 
+      minHeight: '8vh', 
       backgroundColor: "#F4F7F9", // Soft background
-      py: 5 
+      py:-5 
     }}>
       <Container maxWidth="lg">
         <Grid container spacing={4} justifyContent="center">
@@ -38,15 +38,15 @@ function Home() {
             const colorBorder = card.color + "30"; // Soft border
             
             return (
-              <Grid item xs={12} md={6} key={index} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Grid item xs={12} sm={6} md={4} key={index} sx={{ display: 'flex', justifyContent: 'center' }}>
                 <Card
                   onClick={() => navigate(card.path)}
                   elevation={0}
                   sx={{
                     // CRITICAL: Fixed dimensions for perfect symmetry
-                    width: "100%",
-                    maxWidth: "500px", 
-                    height: "140px",
+                    
+                    width: "400px", 
+                    height: "160px",
                     
                     display: "flex",
                     alignItems: "center",
