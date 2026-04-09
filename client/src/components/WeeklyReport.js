@@ -88,7 +88,7 @@ function WeeklyReport() {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          `${API_BASE}/responses/weekly?date=${referenceDate.format("YYYY-MM-DD")}`,
+          `${API_BASE}/api/responses/weekly?date=${referenceDate.format("YYYY-MM-DD")}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         build7Days(res.data);
@@ -105,7 +105,7 @@ function WeeklyReport() {
     const fetchResponseDates = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`${API_BASE}/responses/all-dates`, {
+        const res = await axios.get(`${API_BASE}/api/responses/all-dates`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setResponseDates(res.data.map((d) => dayjs(d).format("YYYY-MM-DD")));

@@ -95,7 +95,7 @@ function YearlyReport() {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          `${API_BASE}/responses/yearly?date=${referenceDate.format("YYYY-MM-DD")}`,
+          `${API_BASE}/api/responses/yearly?date=${referenceDate.format("YYYY-MM-DD")}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         build365Days(res.data || []);
@@ -112,7 +112,7 @@ function YearlyReport() {
     const fetchResponseDates = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`${API_BASE}/responses/all-dates`, {
+        const res = await axios.get(`${API_BASE}/api/responses/all-dates`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setResponseDates(res.data.map((d) => dayjs(d).format("YYYY-MM-DD")));

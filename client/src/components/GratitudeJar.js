@@ -23,7 +23,7 @@ function GratitudeJar() {
     const headers = { headers: { Authorization: `Bearer ${token}` } };
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE}/responses/by-date?date=${today}`, headers);
+      const res = await axios.get(`${API_BASE}/api/responses/by-date?date=${today}`, headers);
       if (res.data && res.data.gratitude) {
         setSavedNotes(res.data.gratitude);
       } else {
@@ -48,7 +48,7 @@ function GratitudeJar() {
     const headers = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
-      await axios.post(`${API_BASE}/responses`, 
+      await axios.post(`${API_BASE}/api/responses`, 
         { date: today, answers: { gratitude: updatedList } },
         headers
       );

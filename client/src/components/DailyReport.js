@@ -71,7 +71,7 @@ function DailyReport() {
         const token = localStorage.getItem("token");
         const dateParam = selectedDate.format("YYYY-MM-DD");
         const res = await axios.get(
-          `${API_BASE}/responses/by-date?date=${dateParam}`,
+          `${API_BASE}/api/responses/by-date?date=${dateParam}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setDayData(res.data);
@@ -88,7 +88,7 @@ function DailyReport() {
     const fetchResponseDates = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`${API_BASE}/responses/all-dates`, {
+        const res = await axios.get(`${API_BASE}/api/responses/all-dates`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setResponseDates(res.data.map((d) => dayjs(d).format("YYYY-MM-DD")));

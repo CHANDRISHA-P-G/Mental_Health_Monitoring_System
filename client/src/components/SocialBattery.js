@@ -30,7 +30,7 @@ function SocialBattery() {
     const headers = { headers: { Authorization: `Bearer ${token}` } };
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE}/responses/by-date?date=${today}`, headers);
+      const res = await axios.get(`${API_BASE}/api/responses/by-date?date=${today}`, headers);
       if (res.data && res.data.socialBattery !== undefined) {
         setValue(res.data.socialBattery);
       }
@@ -53,7 +53,7 @@ function SocialBattery() {
     try {
       setLoading(true);
       const res = await axios.post(
-        `${API_BASE}/responses`,
+        `${API_BASE}/api/responses`,
         { date: today, answers: { socialBattery: value } },
         authHeaders
       );

@@ -88,7 +88,7 @@ function Test() {
 
   const fetchHistory = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_BASE}/responses/all-dates`, authHeaders);
+      const res = await axios.get(`${API_BASE}/api/responses/all-dates`, authHeaders);
       setSubmittedDates(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("fetchHistory error:", err.response?.data || err.message);
@@ -99,7 +99,7 @@ function Test() {
     try {
       const formattedDate = selectedDate.format("YYYY-MM-DD");
       const res = await axios.get(
-        `${API_BASE}/responses/by-date?date=${formattedDate}`,
+        `${API_BASE}/api/responses/by-date?date=${formattedDate}`,
         authHeaders
       );
       const doc = res.data;
@@ -181,7 +181,7 @@ function Test() {
         Afternoon: data.Afternoon,
         Night: data.Night,
       };
-      await axios.post(`${API_BASE}/responses`, payload, authHeaders);
+      await axios.post(`${API_BASE}/api/responses`, payload, authHeaders);
       await fetchHistory();
       await checkExistingData();
       setSnack({
