@@ -10,7 +10,14 @@ const authRoutes = require('./routes/auth'); // your auth routes
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:3000", 
+    "https://mental-health-monitoring-system-ogi.vercel.app",
+    "https://mental-health-monitoring-sy-git-0c0d4e-chandrisha-p-gs-projects.vercel.app"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Debug logger
