@@ -21,7 +21,7 @@ import InsightsIcon from '@mui/icons-material/Insights';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import Pomodoro from "./Pomodoro"; 
-
+const API_BASE = process.env.REACT_APP_API_URL || "https://mental-health-monitoring-system-pnuu.onrender.com";
 function Layout() {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -36,9 +36,9 @@ function Layout() {
           navigate("/login");
           return;
         }
-        const res = await axios.get("http://localhost:5000/api/auth/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(`${API_BASE}/api/auth/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+      });
         setUsername(res.data.name || "User");
       } catch (err) {
         console.error("Failed to fetch user profile:", err.message);
