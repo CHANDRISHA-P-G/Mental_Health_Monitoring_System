@@ -13,7 +13,7 @@ const Login = () => {
 
   const handleSubmit = async () => {
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", formData);
+      const res = await axios.post(`${API_BASE}/api/auth/login`, formData);
 
       // 1. Save the Token for API calls
       localStorage.setItem("token", res.data.token);

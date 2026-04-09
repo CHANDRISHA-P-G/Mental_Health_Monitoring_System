@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Container, TextField, Button, Typography, Box, Paper } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
+const API_BASE = process.env.REACT_APP_API_URL || "https://mental-health-monitoring-system-pnuu.onrender.com";
 const Signup = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -20,10 +20,7 @@ const Signup = () => {
 
   const handleSubmit = async () => {
     try {
-      await axios.post(
-        "http://localhost:5000/api/auth/signup",
-        formData
-      );
+      await axios.post(`${API_BASE}/api/auth/signup`, formData);
 
       alert("Signup successful ✅");
       navigate("/login");
