@@ -50,7 +50,7 @@ function Hydration() {
   const updateDB = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/responses",
+        `${API_BASE}/api/responses`,
         { date: today, hydration: pendingValue },
         { headers: { Authorization: `Bearer ${token}` } }
       );

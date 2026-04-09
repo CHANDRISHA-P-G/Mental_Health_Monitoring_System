@@ -50,7 +50,7 @@ function Sleep() {
   const updateDB = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/responses",
+        `${API_BASE}/api/responses`,
         { date: today, sleep: pendingHours },
         { headers: { Authorization: `Bearer ${token}` } }
       );
