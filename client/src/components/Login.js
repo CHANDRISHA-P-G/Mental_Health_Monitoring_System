@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Container, TextField, Button, Typography, Paper, Box } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
+const API_BASE = process.env.REACT_APP_API_URL || "https://mental-health-monitoring-system-pnuu.onrender.com";
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
