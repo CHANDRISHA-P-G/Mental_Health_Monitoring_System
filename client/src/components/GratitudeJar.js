@@ -35,7 +35,7 @@ function GratitudeJar() {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE, today, token]);
+  }, [today, token]);
 
   useEffect(() => {
     fetchGratitude();

@@ -135,8 +135,6 @@ function WeeklyReport() {
     else neu += 0.5;
   })));
 
-  const total = pos + neu + neg || 1;
-
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}><CircularProgress /></Box>;
 
   return (
