@@ -15,7 +15,7 @@ import NightsStayIcon from "@mui/icons-material/NightsStay";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
-
+const API_BASE = process.env.REACT_APP_API_URL || "https://mental-health-monitoring-system-pnuu.onrender.com";
 const SLEEP_PURPLE = "#7C4DFF";
 const BONUS_GOLD = "#FFA000";
 const GOAL_HOURS = 8;
@@ -32,7 +32,7 @@ function Sleep() {
       try {
         setLoading(true);
         const res = await axios.get(
-          `http://localhost:5000/api/responses/by-date?date=${today}`,
+          `${API_BASE}/api/responses/by-date?date=${today}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.data) {

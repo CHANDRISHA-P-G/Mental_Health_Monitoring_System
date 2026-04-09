@@ -17,7 +17,7 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
-
+const API_BASE = process.env.REACT_APP_API_URL || "https://mental-health-monitoring-system-pnuu.onrender.com";
 const EXERCISE_TEAL = "#00ACC1";
 const BONUS_GOLD = "#FFA000";
 const GOAL_MINUTES = 60;
@@ -34,7 +34,7 @@ function Exercise() {
       try {
         setLoading(true);
         const res = await axios.get(
-          `http://localhost:5000/api/responses/by-date?date=${today}`,
+          `${API_BASE}/api/responses/by-date?date=${today}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.data) {
